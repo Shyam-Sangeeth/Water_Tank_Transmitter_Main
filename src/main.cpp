@@ -93,8 +93,6 @@ void loop()
   {
     digitalWrite(ERROR_PIN, HIGH);
   }
-  // Calculate distance
-  calculateDistance();
   // Handle incoming message
   if (incomingMessageReceived)
   {
@@ -108,6 +106,8 @@ void loop()
     }
     incomingMessageReceived = false;
   }
+  // Calculate distance
+  calculateDistance();
   // Send data
   if (tankStateChanged)
   {
@@ -123,9 +123,9 @@ void loop()
   }
   else
   {
-    canFrame.data[0] = 170;
     canFrame.id = CAN_SEND_ID;
     canFrame.length = 8;
+    canFrame.data[0] = 170;
     if (onOffSensors)
     {
       temperature = readTemperature() * 100;
