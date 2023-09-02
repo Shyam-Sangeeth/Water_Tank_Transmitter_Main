@@ -25,7 +25,7 @@ struct can_frame
   unsigned long id;
   byte length;
   byte data[8];
-} canFrame, canReceiveFrame;
+} canFrame;
 int temperature = 0;
 int waterLevel = 0;
 byte errorCount = 0;
@@ -34,8 +34,6 @@ unsigned long interrupt_time = 0;
 boolean tankfull = false;
 boolean tankempty = false;
 boolean tankStateChanged = false;
-boolean incomingMessageReceived = false;
-boolean onOffSensors = true;
 unsigned long tankDataCount = 0;
 float waterDistance = 0;
 // Creating Instances
@@ -93,19 +91,6 @@ void loop()
   {
     digitalWrite(ERROR_PIN, HIGH);
   }
-  // Handle incoming message
-  if (incomingMessageReceived)
-  {
-    if (canReceiveFrame.data[1] == 1)
-    {
-      onOffSensors = true;
-    }
-    else if (canReceiveFrame.data[1] == 0)
-    {
-      onOffSensors = false;
-    }
-    incomingMessageReceived = false;
-  }
   // Calculate distance
   calculateDistance();
   // Send data
@@ -126,24 +111,10 @@ void loop()
     canFrame.id = CAN_SEND_ID;
     canFrame.length = 8;
     canFrame.data[0] = 170;
-    if (onOffSensors)
-    {
-      temperature = readTemperature() * 100;
-    }
-    else
-    {
-      temperature = 0;
-    }
+    temperature = readTemperature() * 100;
     canFrame.data[1] = (short)(temperature / 100);
     canFrame.data[2] = (short)((temperature / 100.0 - temperature / 100) * 100);
-    if (onOffSensors)
-    {
-      waterLevel = calculateWater(waterDistance) * 100;
-    }
-    else
-    {
-      waterLevel = 0;
-    }
+    waterLevel = calculateWater(waterDistance) * 100;
     canFrame.data[3] = (short)(waterLevel / 100);
     canFrame.data[4] = (short)((waterLevel / 100.0 - waterLevel / 100) * 100);
     canFrame.data[5] = !digitalRead(DRY_RUN_PIN);
@@ -211,16 +182,7 @@ void calculateDistance()
   }
 }
 
-void canISR()
-{
-  if (CAN_BUS.readMsgBuf(&canReceiveFrame.id, &canReceiveFrame.length, canReceiveFrame.data) == CAN_OK)
-  {
-    if (canReceiveFrame.id == CAN_RECEIVE_ID && canReceiveFrame.length == 3 && canReceiveFrame.data[0] == 100 && canReceiveFrame.data[2] == 100)
-    {
-      incomingMessageReceived = true;
-    }
-  }
-}
+void canISR() {}
 
 void tankStateISR()
 {
